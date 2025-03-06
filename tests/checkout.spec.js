@@ -78,7 +78,7 @@ test('Checkout item', async({page}, testInfo) => {
     test('assertion', async ({page}) => {
         await page.locator("xpath=(//div[@class='col-lg-4 col-md-6 mb-4'])[3]//descendant::a[@class='hrefch']").click()
         await page.locator("xpath=//a[@class='btn btn-success btn-lg']").click()
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(1500);
     })
 
 })
