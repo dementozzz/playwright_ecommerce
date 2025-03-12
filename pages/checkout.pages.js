@@ -53,6 +53,5 @@ export class CheckoutPages{
             body: await this.page.screenshot(),
             contentType: "image/png",
         }) : null;
-
     }
 }

@@ -1,18 +1,14 @@
 const { test, expect } = require('@playwright/test') ;
 const {CheckoutPages} = require('../pages/checkout.pages');
+const {LoginPages} = require('../pages/login.pages');
 require('dotenv').config();
 
 test.beforeEach('Login', async({page}) => {
     //login first
-    await page.goto('/');
-
-    await page.locator("xpath=//div[@class='navbar-collapse']//descendant::a[@id='login2']").click({timeout: 2000});
-    await page.locator("xpath=//input[@id='loginusername']").fill(process.env.CREDENTIAL_USERNAME);
-    await page.locator("xpath=//input[@id='loginpassword']").fill(process.env.CREDENTIAL_PASSWORD);
-    await page.locator("xpath=//div[@id='logInModal']//descendant::button[@class='btn btn-primary']").click({timeout: 2000});    
-
-    const userWelcomeElement = page.locator("xpath=//a[@id='nameofuser']");
-    await expect(userWelcomeElement).toBeVisible();
+    const loginPages = new LoginPages(page);
+    
+    await loginPages.goto();
+    await loginPages.loginValid();
 })
 
 test('Checkout item', async({page}, testInfo) => {
@@ -29,10 +25,6 @@ test('Checkout item', async({page}, testInfo) => {
     })
     
     await test.step('navigate & check added item in cart page', async () => {
-        // await page.locator("xpath=//a[@id='cartur']").click({timeout: 2000})
-        // await page.waitForSelector("xpath=//tr[@class='success']");
-        // const elementItem = page.locator("xpath=//tr[@class='success']")
-        // const countItem = await elementItem.count()
         const qtyCartItem = await checkoutPages.countCartItem();
         expect(qtyCartItem).toBeGreaterThan(0);
     
@@ -40,7 +32,6 @@ test('Checkout item', async({page}, testInfo) => {
             body: await page.screenshot(),
             contentType: "image/png",
         })
-
         await page.locator("xpath=//button[@class='btn btn-success']").click({timeout: 2000})
     })
    
