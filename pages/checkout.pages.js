@@ -10,13 +10,28 @@ export class CheckoutPages{
         await this.page.goto('/');
     }
 
+    async getAPIResponse(){
+        return this.page.waitForResponse(async (res) => {
+            if(!res.url().includes('/viewcart')){
+                return false;
+            }
+
+            console.log(res.url())
+            const resBody = await res.json()
+            return resBody
+        })
+    }
+
     async addItem(captureImage){
         const captureImages = captureImage ? captureImage : false;
 
-        await this.page.locator("xpath=//a[@id='nava']").click({timeout: 2000});
-        await this.page.locator("xpath=(//div[@class='col-lg-4 col-md-6 mb-4'])[5]//descendant::a[@class='hrefch']").click({timeout: 2000});
-        await this.page.locator("xpath=//a[@class='btn btn-success btn-lg']").click({timeout:2000});
-        
+        await this.page.locator("xpath=//a[@id='nava']").click({timeout: 10_000});
+        const randomSelectedItem = Math.floor(Math.random() * 9) + 1;
+
+        await this.page.locator("xpath=(//div[@class='col-lg-4 col-md-6 mb-4'])[" + randomSelectedItem + "]//descendant::a[@class='hrefch']").click({timeout: 10_000});
+        await this.page.locator("xpath=//a[@class='btn btn-success btn-lg']").click({timeout:10_000});
+        await this.page.waitForLoadState("networkidle");
+
         captureImages ? 
         await this.testInfo.attach("add_item_1", {
             body: await this.page.screenshot(),
@@ -24,13 +39,33 @@ export class CheckoutPages{
         }) : null;
     }
 
-    async countCartItem(){
-        await this.page.locator("xpath=//a[@id='cartur']").click({timeout: 2000});
-        await this.page.waitForSelector("xpath=//tr[@class='success']");
-        const elementItem = this.page.locator("xpath=//tr[@class='success']");
-        const countItem = await elementItem.count();
+    async removeSingularItem(index){
+        
+        const randomSelectedItem = Math.floor(Math.random() * index) + 1;
+        await this.page.locator("xpath=//tr[@class='success'][" + randomSelectedItem + "]//descendant::a").click({timeout: 10_000});
+        await this.page.waitForLoadState("domcontentloaded");
+    }
 
-        return countItem;
+    async removeAllItems(index){
+        
+        for (let i = 0; i < index; i++){
+            await this.page.locator("xpath=//tr[@class='success'][1]//descendant::a").click({timeout: 10_000});
+            await this.page.waitForLoadState("domcontentloaded");
+        }
+    }
+
+    async countCartItem(){
+        await this.page.waitForLoadState("networkidle")
+        
+        const isItemCartExist = await this.page.locator("xpath=//tr[@class='success']").last().isVisible();
+        if(isItemCartExist){
+            const elementItem = this.page.locator("xpath=//tr[@class='success']");
+            const countItem = await elementItem.count();
+    
+            return countItem;
+        }else{
+            return 0;
+        }     
     }
 
     async fillDeliveryInformation(objData, captureImage){
@@ -43,7 +78,7 @@ export class CheckoutPages{
         await this.page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='month']").fill(objData.month);
         await this.page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='year']").fill(objData.year);
 
-        await this.page.locator("xpath=//div[@id='orderModal']//descendant::button[@class='btn btn-primary']").click({timeout:2000});
+        await this.page.locator("xpath=//div[@id='orderModal']//descendant::button[@class='btn btn-primary']").click({timeout:10_000});
     
         const successAlert = this.page.locator("xpath=//div[@class='sweet-alert  showSweetAlert visible']");
         await expect(successAlert).toBeVisible();

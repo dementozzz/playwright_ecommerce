@@ -4,7 +4,7 @@ require('dotenv').config();
 
 test('Login with valid credential', async({page}) => {
     const loginPages = new LoginPages(page);
-
+    
     await loginPages.goto();
     await loginPages.loginValid();
 })

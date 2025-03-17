@@ -13,26 +13,31 @@ test.beforeEach('Login', async({page}) => {
 
 test('Checkout item', async({page}, testInfo) => {
     const checkoutPages = new CheckoutPages(page, testInfo)
+    const qtyItemAdded = 3;
 
-    await test.step('add item to cart', async () => {
-        await test.step('add 1st item', async () => {
+    page.on('dialog', async dialog => {
+        console.log(dialog.message());
+        await dialog.accept();
+    });
+
+    for(let i = 0; i < qtyItemAdded; i++){
+        await test.step('add item (' + (i+1) + ')', async () => {
             await checkoutPages.addItem(true)
         })
-
-        await test.step('add 2nd item', async () => {
-            await checkoutPages.addItem(true)
-        })             
-    })
+    }
     
     await test.step('navigate & check added item in cart page', async () => {
+        await page.locator("xpath=//a[@id='cartur']").click({timeout: 10_000});
+        
         const qtyCartItem = await checkoutPages.countCartItem();
-        expect(qtyCartItem).toBeGreaterThan(0);
+        console.log("Qty ITEM : " + qtyCartItem)
+        expect(qtyCartItem).toEqual(qtyItemAdded);
     
         await testInfo.attach("check_added_item", {
             body: await page.screenshot(),
             contentType: "image/png",
         })
-        await page.locator("xpath=//button[@class='btn btn-success']").click({timeout: 2000})
+        await page.locator("xpath=//button[@class='btn btn-success']").click({timeout: 10_000})
     })
    
     await test.step('fill delivery information', async () => {
@@ -47,5 +52,54 @@ test('Checkout item', async({page}, testInfo) => {
 
         await checkoutPages.fillDeliveryInformation(data, true);
     })
+})
+
+test('Remove Singular item from cart', async({page}, testInfo) => {
+    const checkoutPages = new CheckoutPages(page, testInfo)
+
+    const qtyItemAdded = 3;
+    for(let i = 0; i < qtyItemAdded; i++){
+        await test.step('add item (' + (i+1) + ')', async () => {
+            await checkoutPages.addItem(true)
+        })
+    }
+
+
+
+    await page.locator("xpath=//a[@id='cartur']").click({timeout: 10_000});
+    const qtyCartItem = await checkoutPages.countCartItem();
+    console.log("initial qty: " + qtyCartItem);
+    await checkoutPages.removeSingularItem(qtyCartItem);
+    const updatedQtyCartItem = await checkoutPages.countCartItem();
+
+    console.log("updated Qty : " + updatedQtyCartItem);  
+})
+
+test('Remove All item from cart', async({page}, testInfo) => {
+    const checkoutPages = new CheckoutPages(page, testInfo)
+
+    const qtyItemAdded = 2;
+    for(let i = 0; i < qtyItemAdded; i++){
+        await test.step('add item (' + (i+1) + ')', async () => {
+            await checkoutPages.addItem(true)
+        })
+    }
+    
+    await page.locator("xpath=//a[@id='cartur']").click({timeout: 10_000});
+    const qtyCartItem = await checkoutPages.countCartItem();
+    console.log("initial qty: " + qtyCartItem);
+    await checkoutPages.removeAllItems(qtyCartItem);
+    const updatedQtyCartItem = await checkoutPages.countCartItem();
+
+    console.log("updated Qty : " + updatedQtyCartItem);
+})
+
+test('countItem', async({page}, testInfo) => {
+    const checkoutPages = new CheckoutPages(page, testInfo)
+
+    await page.locator("xpath=//a[@id='cartur']").click({timeout: 10_000});
+    const qtyCartItem = await checkoutPages.countCartItem();
+    console.log("Qty Item : " + qtyCartItem)
+    expect(qtyCartItem).toEqual(0);
 })
 
