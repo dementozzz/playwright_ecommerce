@@ -10,18 +10,6 @@ export class CheckoutPages{
         await this.page.goto('/');
     }
 
-    async getAPIResponse(){
-        return this.page.waitForResponse(async (res) => {
-            if(!res.url().includes('/viewcart')){
-                return false;
-            }
-
-            console.log(res.url())
-            const resBody = await res.json()
-            return resBody
-        })
-    }
-
     async addItem(captureImage){
         const captureImages = captureImage ? captureImage : false;
 
@@ -37,21 +25,6 @@ export class CheckoutPages{
             body: await this.page.screenshot(),
             contentType: "image/png",
         }) : null;
-    }
-
-    async removeSingularItem(index){
-        
-        const randomSelectedItem = Math.floor(Math.random() * index) + 1;
-        await this.page.locator("xpath=//tr[@class='success'][" + randomSelectedItem + "]//descendant::a").click({timeout: 10_000});
-        await this.page.waitForLoadState("domcontentloaded");
-    }
-
-    async removeAllItems(index){
-        
-        for (let i = 0; i < index; i++){
-            await this.page.locator("xpath=//tr[@class='success'][1]//descendant::a").click({timeout: 10_000});
-            await this.page.waitForLoadState("domcontentloaded");
-        }
     }
 
     async countCartItem(){
