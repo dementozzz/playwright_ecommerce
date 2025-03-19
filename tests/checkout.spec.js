@@ -1,84 +1,57 @@
 const { test, expect } = require('@playwright/test') ;
+const {CheckoutPages} = require('../pages/checkout.pages');
+const {LoginPages} = require('../pages/login.pages');
 require('dotenv').config();
 
 test.beforeEach('Login', async({page}) => {
     //login first
-    await page.goto('/');
-
-    await page.locator("xpath=//div[@class='navbar-collapse']//descendant::a[@id='login2']").click({timeout: 2000});
-    await page.locator("xpath=//input[@id='loginusername']").fill(process.env.CREDENTIAL_USERNAME);
-    await page.locator("xpath=//input[@id='loginpassword']").fill(process.env.CREDENTIAL_PASSWORD);
-    await page.locator("xpath=//div[@id='logInModal']//descendant::button[@class='btn btn-primary']").click({timeout: 2000});    
-
-    const userWelcomeElement = page.locator("xpath=//a[@id='nameofuser']");
-    await expect(userWelcomeElement).toBeVisible();
+    const loginPages = new LoginPages(page);
+    
+    await loginPages.goto();
+    await loginPages.loginValid();
 })
 
 test('Checkout item', async({page}, testInfo) => {
+    const checkoutPages = new CheckoutPages(page, testInfo)
+    const qtyItemAdded = 3;
 
-    await test.step('add item to cart', async () => {
-        await test.step('add 1st item', async () => {
-            await page.locator("xpath=(//div[@class='col-lg-4 col-md-6 mb-4'])[3]//descendant::a[@class='hrefch']").click({timeout: 2000})
-            await page.locator("xpath=//a[@class='btn btn-success btn-lg']").click({timeout: 2000})
-            // await page.waitForTimeout(2000);
-            await testInfo.attach("add_item_1", {
-                body: await page.screenshot(),
-                contentType: "image/png",
-            })
+    page.on('dialog', async dialog => {
+        console.log(dialog.message());
+        await dialog.accept();
+    });
+
+    for(let i = 0; i < qtyItemAdded; i++){
+        await test.step('add item (' + (i+1) + ')', async () => {
+            await checkoutPages.addItem(true)
         })
-
-        await test.step('add 2nd item', async () => {
-            await page.locator("xpath=//a[@id='nava']").click({timeout: 2000})
-
-            await page.locator("xpath=(//div[@class='col-lg-4 col-md-6 mb-4'])[5]//descendant::a[@class='hrefch']").click({timeout: 2000})
-            await page.locator("xpath=//a[@class='btn btn-success btn-lg']").click({timeout:2000})
-            // await page.waitForTimeout(2000);
-            await testInfo.attach("add_item_2", {
-                body: await page.screenshot(),
-                contentType: "image/png",
-            })
-        })             
-    })
+    }
     
     await test.step('navigate & check added item in cart page', async () => {
-        await page.locator("xpath=//a[@id='cartur']").click({timeout: 2000})
-        await page.waitForSelector("xpath=//tr[@class='success']");
-        const elementItem = page.locator("xpath=//tr[@class='success']")
-        const countItem = await elementItem.count()
-        expect(countItem).toBeGreaterThan(0)
+        await page.locator("xpath=//a[@id='cartur']").click({timeout: 10_000});
+        
+        const qtyCartItem = await checkoutPages.countCartItem();
+        console.log("Qty ITEM : " + qtyCartItem)
+        expect(qtyCartItem).toEqual(qtyItemAdded);
     
         await testInfo.attach("check_added_item", {
             body: await page.screenshot(),
             contentType: "image/png",
         })
-
-        await page.locator("xpath=//button[@class='btn btn-success']").click({timeout: 2000})
+        await page.locator("xpath=//button[@class='btn btn-success']").click({timeout: 10_000})
     })
    
     await test.step('fill delivery information', async () => {
-        await page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='name']").fill('andre')
-        await page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='country']").fill('Malaysia')
-        await page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='city']").fill('Selangor')
-        await page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='card']").fill('07362736')
-        await page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='month']").fill('7')
-        await page.locator("xpath=//div[@id='orderModal']//descendant::input[@id='year']").fill('2025')
-    
-        await page.locator("xpath=//div[@id='orderModal']//descendant::button[@class='btn btn-primary']").click({timeout:2000})
-        // await page.waitForTimeout(1000);
-    
-        const successAlert = page.locator("xpath=//div[@class='sweet-alert  showSweetAlert visible']");
-        await expect(successAlert).toBeVisible();
+        const data = {
+            name : "andreas maulana",
+            country : "malaysia",
+            city : "selangor",
+            cardnumber : "4433221",
+            month : "7",
+            year : "2025"
+        }
 
-        await testInfo.attach("success_checkout", {
-            body: await page.screenshot(),
-            contentType: "image/png",
-        })
+        await checkoutPages.fillDeliveryInformation(data, true);
     })
 })
 
-test('assertion', async ({page}) => {
-    await page.locator("xpath=(//div[@class='col-lg-4 col-md-6 mb-4'])[3]//descendant::a[@class='hrefch']").click()
-    await page.locator("xpath=//a[@class='btn btn-success btn-lg']").click({timeout:2000})
-    await page.waitForTimeout(1500);
-})
 
